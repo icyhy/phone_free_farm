@@ -17,4 +17,7 @@ captures/
 PhoneFocusFarm/gradle/
 PhoneFocusFarm/gradle-install/
 PhoneFocusFarm/tools/
+.vercel/
+PhoneFocusFarm/*.zip
+.kotlin/
 .kotlin/
