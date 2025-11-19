@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">专注农场</string>
+    <string name="service_description">专注计时服务，帮助您保持专注</string>
+    
+    <!-- 通用 -->
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="share">分享</string>
+    <string name="settings">设置</string>
+    
+    <!-- 专注页面 -->
+    <string name="focus_title">专注时间</string>
+    <string name="start_focus">开始专注</string>
+    <string name="stop_focus">停止专注</string>
+    <string name="focus_mode_strict">严格模式</string>
+    <string name="focus_mode_natural">自然模式</string>
+    <string name="focus_tips_keep_phone_still">保持手机静止，避免触摸</string>
+    <string name="focus_tips_test_mode">测试模式已启用</string>
+    
+    <!-- 农场页面 -->
+    <string name="farm_title">我的农场</string>
+    <string name="farm_animal_count">动物数量: %d</string>
+    <string name="farm_click_animal">点击动物进行互动</string>
+    <string name="farm_chicken">小鸡</string>
+    <string name="farm_cat">小猫</string>
+    <string name="farm_dog">小狗</string>
+    
+    <!-- 统计页面 -->
+    <string name="statistics_title">数据统计</string>
+    <string name="statistics_total_time">总专注时间</string>
+    <string name="statistics_total_sessions">专注次数</string>
+    <string name="statistics_animals_generated">生成动物</string>
+    <string name="statistics_current_cycle">当前周期</string>
+    <string name="statistics_achievements">成就</string>
+    <string name="statistics_share_achievement">分享成就</string>
+    
+    <!-- 成就 -->
+    <string name="achievement_first_chicken">第一只小鸡</string>
+    <string name="achievement_first_chicken_desc">孵化出第一只小鸡</string>
+    <string name="achievement_cat_master">猫咪大师</string>
+    <string name="achievement_cat_master_desc">拥有5只小猫</string>
+    <string name="achievement_dog_lover">狗狗爱好者</string>
+    <string name="achievement_dog_lover_desc">拥有3只小狗</string>
+    <string name="achievement_focus_master">专注大师</string>
+    <string name="achievement_focus_master_desc">累计专注24小时</string>
+    
+    <!-- 权限 -->
+    <string name="permission_usage_stats_title">使用情况访问权限</string>
+    <string name="permission_usage_stats_desc">需要此权限来检测您是否在使用其他应用</string>
+    <string name="permission_notification_title">通知权限</string>
+    <string name="permission_notification_desc">需要此权限来显示专注计时通知</string>
+    <string name="permission_battery_optimization_title">电池优化</string>
+    <string name="permission_battery_optimization_desc">请将应用添加到电池优化白名单，以确保专注计时正常工作</string>
+    
+    <!-- 通知 -->
+    <string name="notification_channel_focus">专注计时</string>
+    <string name="notification_channel_achievement">成就提醒</string>
+    <string name="notification_focus_title">专注进行中</string>
+    <string name="notification_focus_content">专注时间: %s</string>
+    <string name="notification_achievement_title">解锁新成就</string>
+    <string name="notification_achievement_content">恭喜获得成就: %s</string>
+    
+    <!-- 分享 -->
+    <string name="share_title">分享我的专注战绩</string>
+    <string name="share_content">我在专注农场中获得了 %s 的成就！</string>
+    <string name="share_wechat">微信分享</string>
+    <string name="share_save_image">保存图片</string>
+    
+    <!-- 错误信息 -->
+    <string name="error_permission_denied">权限被拒绝，部分功能可能无法正常使用</string>
+    <string name="error_timer_failed">计时器启动失败</string>
+    <string name="error_save_failed">保存失败</string>
+    <string name="error_share_failed">分享失败</string>
+    
+    <!-- 时间格式 -->
+    <string name="time_format_hour">%d小时</string>
+    <string name="time_format_minute">%d分钟</string>
+    <string name="time_format_second">%d秒</string>
+    <string name="time_format_hour_minute">%d小时%d分钟</string>
+</resources>

@@ -98,4 +98,4 @@ PhoneFocusFarm/
 ```
 
 ## 许可证
-- 暂未设置，可根据项目需要添加（如 MIT/Apache-2.0 等）。
+- MIT/Apache-2.0。

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="." />
+    <exclude domain="sharedpref" path="focus_timer_prefs.xml" />
+    <exclude domain="database" path="focus_database" />
+    <exclude domain="file" path="logs/" />
+    <exclude domain="external" path="focus_data/" />
+</full-backup-content>

@@ -1,0 +1,30 @@
+PhoneFocusFarm 构建信息
+========================
+构建时间: 2025年11月15日 星期六 22时21分54秒 CST
+应用包名: com.phonefocusfarm
+版本号: 1.0
+版本代码: 1
+最低SDK: 29
+目标SDK: 34
+编译SDK: 34
+
+包含功能:
+- 3D农场渲染 (OpenGL ES 2.0)
+- 动物AI行为系统
+- 动画和音效反馈
+- 专注计时器
+- 微信分享集成
+
+文件大小:
+- APK大小: ~15.2MB
+- 3D资源: ~3.8MB
+- 音频资源: ~1.5MB
+- 代码: ~2.1MB
+
+依赖库:
+- AndroidX Core
+- Jetpack Compose
+- Hilt DI
+- Room数据库
+- Kotlin协程
+- OpenGL ES

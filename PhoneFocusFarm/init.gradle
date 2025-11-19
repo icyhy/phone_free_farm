@@ -1,0 +1,49 @@
+// Gradle全局配置文件，用于配置国内镜像
+allprojects {
+    repositories {
+        // 国内镜像优先
+        maven { 
+            url 'https://maven.aliyun.com/repository/public/' 
+            name 'Aliyun Public'
+        }
+        maven { 
+            url 'https://maven.aliyun.com/repository/google/' 
+            name 'Aliyun Google'
+        }
+        maven { 
+            url 'https://maven.aliyun.com/repository/central/' 
+            name 'Aliyun Central'
+        }
+        maven { 
+            url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' 
+            name 'Tencent Maven'
+        }
+        maven { 
+            url 'https://mirrors.huaweicloud.com/repository/maven/' 
+            name 'Huawei Maven'
+        }
+        // 官方源作为后备
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// 配置插件下载镜像
+settingsEvaluated { settings ->
+    settings.pluginManagement {
+        repositories {
+            maven { 
+                url 'https://maven.aliyun.com/repository/gradle-plugin/' 
+                name 'Aliyun Gradle Plugin'
+            }
+            maven { 
+                url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' 
+                name 'Tencent Maven'
+            }
+            gradlePluginPortal()
+            google()
+            mavenCentral()
+        }
+    }
+}

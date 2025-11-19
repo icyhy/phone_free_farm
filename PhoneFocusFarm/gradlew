@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Gradle Wrapper Script
+GRADLE_HOME="${GRADLE_HOME:-$HOME/.gradle}"
+GRADLE_VERSION="8.14.3"
+GRADLE_DIST_DIR="$GRADLE_HOME/wrapper/dists/gradle-$GRADLE_VERSION-bin"
+GRADLE_EXEC="$GRADLE_DIST_DIR/gradle-$GRADLE_VERSION/bin/gradle"
+LOCAL_GRADLE="$(pwd)/gradle-install/bin/gradle"
+
+# Function to find gradle in common locations
+find_gradle() {
+    # Check local installation first
+    if [ -f "$LOCAL_GRADLE" ] && [ -x "$LOCAL_GRADLE" ]; then
+        echo "$LOCAL_GRADLE"
+        return 0
+    fi
+    
+    # Check if gradle is in PATH
+    if command -v gradle >/dev/null 2>&1; then
+        command -v gradle
+        return 0
+    fi
+    
+    # Check common installation locations
+    local gradle_locations=(
+        "/usr/local/bin/gradle"
+        "/opt/homebrew/bin/gradle"
+        "/usr/bin/gradle"
+        "$GRADLE_EXEC"
+    )
+    
+    for location in "${gradle_locations[@]}"; do
+        if [ -f "$location" ] && [ -x "$location" ]; then
+            echo "$location"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Try to find and use gradle
+GRADLE_CMD=$(find_gradle)
+
+if [ -n "$GRADLE_CMD" ]; then
+    echo "Using Gradle: $GRADLE_CMD"
+    exec "$GRADLE_CMD" "$@"
+else
+    echo "Gradle not found. Attempting to use cached version..."
+    
+    # Try to use the cached gradle if available
+    if [ -f "$GRADLE_EXEC" ]; then
+        echo "Using cached Gradle: $GRADLE_EXEC"
+        exec "$GRADLE_EXEC" "$@"
+    else
+        echo "No Gradle installation found."
+        echo "Please install Gradle or ensure network connectivity to download it."
+        echo "You can install Gradle using:"
+        echo "  - Homebrew: brew install gradle"
+        echo "  - MacPorts: sudo port install gradle"
+        echo "  - Manual download: https://gradle.org/install/"
+        exit 1
+    fi
+fi

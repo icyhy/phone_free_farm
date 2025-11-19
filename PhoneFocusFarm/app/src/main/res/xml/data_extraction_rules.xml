@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="focus_timer_prefs.xml" />
+        <exclude domain="database" path="focus_database" />
+        <exclude domain="file" path="logs/" />
+        <exclude domain="external" path="focus_data/" />
+    </cloud-backup>
+</data-extraction-rules>
