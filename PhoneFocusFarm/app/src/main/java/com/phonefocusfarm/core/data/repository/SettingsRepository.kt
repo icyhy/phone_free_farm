@@ -86,11 +86,11 @@ class SettingsRepository @Inject constructor(
         // 创建周期记录
         val cycle = CycleEntity(
             id = UUID.randomUUID().toString(),
-            startTime = System.currentTimeMillis() - 86400000L, // 假设周期从24小时前开始
+            startTime = System.currentTimeMillis() - _animalUpgradeConfig.value.cycleDuration,
             endTime = System.currentTimeMillis(),
             type = _animalUpgradeConfig.value.cycleType,
-            totalSessions = 0, // 这里可以从其他数据源获取
-            totalDuration = 0L, // 这里可以从其他数据源获取
+            totalSessions = 0,
+            totalDuration = 0L,
             chickenCount = chickenCount,
             catCount = catCount,
             dogCount = dogCount,
@@ -103,6 +103,39 @@ class SettingsRepository @Inject constructor(
         cycleDao.insertCycle(cycle)
         
         // 清空所有动物
+        animalDao.deleteAllAnimals()
+    }
+
+    suspend fun resetFarmCycleForRange(startTime: Long, endTime: Long, reason: String) {
+        val animals = animalDao.getAllAnimals().first()
+        val animalCounts = mutableMapOf<AnimalType, Int>()
+        for (animal in animals) {
+            animalCounts[animal.type] = (animalCounts[animal.type] ?: 0) + 1
+        }
+        val chickenCount = (animalCounts[AnimalType.CHICKEN] ?: 0) +
+                (animalCounts[AnimalType.CHICKEN_RED] ?: 0) +
+                (animalCounts[AnimalType.CHICKEN_FANCY] ?: 0)
+        val catCount = (animalCounts[AnimalType.CAT] ?: 0) +
+                (animalCounts[AnimalType.CAT_TABBY] ?: 0) +
+                (animalCounts[AnimalType.CAT_FAT] ?: 0)
+        val dogCount = (animalCounts[AnimalType.DOG] ?: 0) +
+                (animalCounts[AnimalType.DOG_BLACK] ?: 0) +
+                (animalCounts[AnimalType.DOG_HUSKY] ?: 0)
+        val cycle = CycleEntity(
+            id = java.util.UUID.randomUUID().toString(),
+            startTime = startTime,
+            endTime = endTime,
+            type = _animalUpgradeConfig.value.cycleType,
+            totalSessions = 0,
+            totalDuration = 0L,
+            chickenCount = chickenCount,
+            catCount = catCount,
+            dogCount = dogCount,
+            achievements = emptyList(),
+            createdAt = System.currentTimeMillis(),
+            resetReason = reason
+        )
+        cycleDao.insertCycle(cycle)
         animalDao.deleteAllAnimals()
     }
 }

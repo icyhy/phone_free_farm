@@ -202,10 +202,10 @@ sealed class AchievementCondition {
 
 // 动物升级配置
 data class AnimalUpgradeConfig(
-    val stageDuration: Long = 600000,  // 每个阶段时长（毫秒）默认10分钟
-    val cycleType: CycleType = CycleType.DAILY,  // 周期类型
-    val cycleDuration: Long = 86400000,  // 周期时长（毫秒）默认1天
-    val maxStage: Int = 2  // 最大升级阶段
+    val stageDuration: Long = 10000,
+    val cycleType: CycleType = CycleType.WEEK,
+    val cycleDuration: Long = 604800000,
+    val maxStage: Int = 2
 )
 
 // 动物升级路径

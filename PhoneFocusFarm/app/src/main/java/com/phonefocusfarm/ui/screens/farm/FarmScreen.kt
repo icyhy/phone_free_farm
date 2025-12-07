@@ -37,6 +37,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.drawToBitmap
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.media.SoundPool
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 
 @Composable
 fun FarmScreen(
@@ -123,6 +130,43 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
     val positions = remember { mutableStateMapOf<String, Offset>() }
     val velocities = remember { mutableStateMapOf<String, Offset>() }
     val fleeTargets = remember { mutableStateMapOf<String, Offset?>() }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val tone = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }
+    val soundPoolRef = remember { mutableStateOf<SoundPool?>(null) }
+    val soundIds = remember { mutableStateMapOf<String, Int>() }
+    val loadedIds = remember { mutableStateListOf<Int>() }
+    DisposableEffect(Unit) {
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val sp = SoundPool.Builder()
+            .setMaxStreams(4)
+            .setAudioAttributes(attrs)
+            .build()
+        soundPoolRef.value = sp
+        sp.setOnLoadCompleteListener { _, sampleId, status ->
+            if (status == 0) {
+                loadedIds.add(sampleId)
+            }
+        }
+        val names = listOf("chicken", "cat", "dog")
+        names.forEach { name ->
+            val resId = context.resources.getIdentifier(name, "raw", context.packageName)
+            if (resId != 0) {
+                val sid = sp.load(context, resId, 1)
+                soundIds[name] = sid
+            }
+        }
+        onDispose {
+            soundPoolRef.value?.release()
+        }
+    }
+    data class P(val emoji: String, val pos: Offset, val vel: Offset, val life: Int)
+    val ambientSprites = remember { mutableStateListOf<Triple<String, Offset, Offset>>() }
+    val particles = remember { mutableStateListOf<P>() }
+    val fleeBoost = remember { mutableStateMapOf<String, Int>() }
     
     // 仅在画布尺寸可用时初始化位置，避免空范围coerceIn崩溃
     if (worldWidth > 0f && worldHeight > 0f) {
@@ -154,15 +198,22 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
     LaunchedEffect(animals.size, canvasSize) {
         while (true) {
             delay(16)
+            if (ambientSprites.isEmpty() && worldWidth > 0f && worldHeight > 0f) {
+                ambientSprites.add(Triple("🌼", Offset(worldWidth * 0.2f, worldHeight * 0.3f), Offset(0.2f, 0.1f)))
+                ambientSprites.add(Triple("🦋", Offset(worldWidth * 0.7f, worldHeight * 0.2f), Offset(-0.4f, 0.15f)))
+                ambientSprites.add(Triple("🍀", Offset(worldWidth * 0.4f, worldHeight * 0.7f), Offset(0.15f, -0.2f)))
+            }
             animals.forEach { a ->
                 val v = velocities[a.id] ?: Offset(0f, 0f)
                 val noise = (Math.random().toFloat() - 0.5f) * 0.6f
-                val speed = when (a.type) {
+                val base = when (a.type) {
                     AnimalType.CHICKEN, AnimalType.CHICKEN_RED, AnimalType.CHICKEN_FANCY -> 1.2f
                     AnimalType.CAT, AnimalType.CAT_TABBY, AnimalType.CAT_FAT -> 1.6f
                     AnimalType.DOG, AnimalType.DOG_BLACK, AnimalType.DOG_HUSKY -> 2.0f
                     else -> 1.0f
                 }
+                val boostFrames = fleeBoost[a.id] ?: 0
+                val speed = if (boostFrames > 0) base * 6f else base
                 val p = positions[a.id] ?: Offset(
                     (Math.random().toFloat() * worldWidth),
                     (Math.random().toFloat() * worldHeight)
@@ -205,9 +256,10 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
                 fleeTargets[a.id]?.let { ft ->
                     val dir = p - ft
                     val len = kotlin.math.max(0.001f, dir.getDistance())
-                    vx += (dir.x / len) * speed
-                    vy += (dir.y / len) * speed
+                    vx += (dir.x / len) * (speed * 2.5f)
+                    vy += (dir.y / len) * (speed * 2.5f)
                     fleeTargets[a.id] = null
+                    if (boostFrames <= 0) fleeBoost[a.id] = 45
                 }
 
                 val nv = Offset(vx.coerceIn(-speed, speed), vy.coerceIn(-speed, speed))
@@ -221,6 +273,29 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
                 if (nx > maxX) { nx = maxX; velocities[a.id] = Offset(-kotlin.math.abs(nv.x), nv.y) }
                 if (ny > maxY) { ny = maxY; velocities[a.id] = Offset(nv.x, -kotlin.math.abs(nv.y)) }
                 positions[a.id] = Offset(nx, ny)
+                if (boostFrames > 0) fleeBoost[a.id] = boostFrames - 1
+            }
+            if (ambientSprites.isNotEmpty()) {
+                for (i in ambientSprites.indices) {
+                    val (emoji, pos, vel) = ambientSprites[i]
+                    var nx = pos.x + vel.x
+                    var ny = pos.y + vel.y
+                    if (nx < 0f || nx > worldWidth) nx = kotlin.math.abs(worldWidth - nx)
+                    if (ny < 0f || ny > worldHeight) ny = kotlin.math.abs(worldHeight - ny)
+                    ambientSprites[i] = Triple(emoji, Offset(nx, ny), vel)
+                }
+            }
+            if (particles.isNotEmpty()) {
+                val toRemove = mutableListOf<Int>()
+                for (i in particles.indices) {
+                    val p = particles[i]
+                    val nx = p.pos.x + p.vel.x
+                    val ny = p.pos.y + p.vel.y
+                    val nl = p.life - 1
+                    particles[i] = P(p.emoji, Offset(nx, ny), p.vel, nl)
+                    if (nl <= 0) toRemove.add(i)
+                }
+                toRemove.sortedDescending().forEach { particles.removeAt(it) }
             }
         }
     }
@@ -312,8 +387,95 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
                             val pos = down.position
                             animals.forEach { a ->
                                 val p = positions[a.id] ?: Offset(0f, 0f)
-                                if ((p - pos).getDistance() < 24f) {
+                                val hit = (pos.x >= p.x && pos.x <= p.x + emojiSizePx && pos.y >= p.y && pos.y <= p.y + emojiSizePx)
+                                if (hit) {
+                                    val sp = soundPoolRef.value
+                                    when (a.type) {
+                                        AnimalType.CHICKEN, AnimalType.CHICKEN_RED, AnimalType.CHICKEN_FANCY -> {
+                                            val sid = soundIds["chicken"]
+                                            if (sid != null && loadedIds.contains(sid) && sp != null) {
+                                                val stream = sp.play(sid, 1f, 1f, 1, 0, 1f)
+                                                if (stream != 0) {
+                                                    scope.launch { delay(300); sp.stop(stream) }
+                                                } else {
+                                                    val resId = context.resources.getIdentifier("chicken", "raw", context.packageName)
+                                                    if (resId != 0) {
+                                                        try {
+                                                            val mp = MediaPlayer.create(context, resId)
+                                                            mp?.apply {
+                                                                setOnCompletionListener { it.release() }
+                                                                start()
+                                                                scope.launch {
+                                                                    delay(300)
+                                                                    try { if (isPlaying) pause() } catch (_: Exception) {}
+                                                                    try { release() } catch (_: Exception) {}
+                                                                }
+                                                            }
+                                                        } catch (_: Exception) { tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120) }
+                                                    } else tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+                                                }
+                                            } else {
+                                                val resId = context.resources.getIdentifier("chicken", "raw", context.packageName)
+                                                if (resId != 0) {
+                                                    try {
+                                                        val mp = MediaPlayer.create(context, resId)
+                                                        mp?.apply {
+                                                            setOnCompletionListener { it.release() }
+                                                            start()
+                                                            scope.launch {
+                                                                delay(450)
+                                                                try { if (isPlaying) pause() } catch (_: Exception) {}
+                                                                try { release() } catch (_: Exception) {}
+                                                            }
+                                                        }
+                                                    } catch (_: Exception) { tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120) }
+                                                } else tone.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+                                            }
+                                        }
+                                        AnimalType.CAT, AnimalType.CAT_TABBY, AnimalType.CAT_FAT -> {
+                                            val sid = soundIds["cat"]
+                                            if (sid != null && loadedIds.contains(sid) && sp != null) {
+                                                scope.launch {
+                                                    val s1 = sp.play(sid, 1f, 1f, 1, 0, 1f)
+                                                    if (s1 != 0) {
+                                                        delay(800); sp.stop(s1)
+                                                    }
+                                                    val s2 = sp.play(sid, 1f, 1f, 1, 0, 1f)
+                                                    if (s2 != 0) { delay(800); sp.stop(s2) }
+                                                }
+                                            } else {
+                                                val resId = context.resources.getIdentifier("cat", "raw", context.packageName)
+                                                if (resId != 0) {
+                                                    scope.launch {
+                                                        val mp1 = MediaPlayer.create(context, resId)
+                                                        mp1.start()
+                                                        delay(800); mp1.stop(); mp1.release()
+                                                        val mp2 = MediaPlayer.create(context, resId)
+                                                        mp2.start()
+                                                        delay(800); mp2.stop(); mp2.release()
+                                                    }
+                                                } else tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 120)
+                                            }
+                                        }
+                                        AnimalType.DOG, AnimalType.DOG_BLACK, AnimalType.DOG_HUSKY -> {
+                                            val sid = soundIds["dog"]
+                                            if (sid != null && loadedIds.contains(sid) && sp != null) {
+                                                val stream = sp.play(sid, 1f, 1f, 1, 0, 1f)
+                                                if (stream != 0) {
+                                                    scope.launch { delay(250); sp.stop(stream) }
+                                                } else {
+                                                    tone.startTone(ToneGenerator.TONE_SUP_ERROR, 120)
+                                                }
+                                            } else tone.startTone(ToneGenerator.TONE_SUP_ERROR, 120)
+                                        }
+                                        else -> tone.startTone(ToneGenerator.TONE_PROP_ACK, 120)
+                                    }
                                     fleeTargets[a.id] = pos
+                                    val dir = (p - pos)
+                                    val len = kotlin.math.max(0.001f, kotlin.math.sqrt(dir.x * dir.x + dir.y * dir.y))
+                                    val boost = 14f
+                                    velocities[a.id] = Offset((dir.x / len) * boost, (dir.y / len) * boost)
+                                    particles.add(P("✨", pos, Offset((Math.random().toFloat() - 0.5f) * 3f, (Math.random().toFloat() - 0.5f) * 3f), 30))
                                 }
                             }
                         }
@@ -356,6 +518,22 @@ private fun FarmCanvas(viewModel: FarmViewModel, expanded: Boolean = false) {
                     fontSize = 48.sp,
                     modifier = Modifier
                         .offset { IntOffset(p.x.toInt(), p.y.toInt()) }
+                )
+            }
+            ambientSprites.forEach { s ->
+                val p = s.second
+                Text(
+                    text = s.first,
+                    fontSize = 24.sp,
+                    modifier = Modifier.offset { IntOffset(p.x.toInt(), p.y.toInt()) }
+                )
+            }
+            particles.forEach { pr ->
+                val p = pr.pos
+                Text(
+                    text = pr.emoji,
+                    fontSize = 18.sp,
+                    modifier = Modifier.offset { IntOffset(p.x.toInt(), p.y.toInt()) }
                 )
             }
         }

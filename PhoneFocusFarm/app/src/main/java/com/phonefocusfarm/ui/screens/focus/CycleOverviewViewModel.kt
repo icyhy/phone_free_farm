@@ -27,6 +27,7 @@ class CycleOverviewViewModel @Inject constructor(
 
     private val _cycleDuration = MutableStateFlow<Long>(0L)
     val cycleDuration: StateFlow<Long> = _cycleDuration.asStateFlow()
+    private var lastStart: Long? = null
 
     init {
         viewModelScope.launch {
@@ -38,10 +39,15 @@ class CycleOverviewViewModel @Inject constructor(
                     CycleType.MONTH -> monthStart(now)
                     else -> dayStart(now)
                 }
-                val end = now
+                val end = start + cfg.cycleDuration - 1
+                if (lastStart != null && start != lastStart) {
+                    val prevStart = lastStart ?: (start - cfg.cycleDuration)
+                    settingsRepository.resetFarmCycleForRange(prevStart, start, "周期切换")
+                }
+                lastStart = start
                 _cycleStart.value = start
                 _cycleEnd.value = end
-                sessionDao.getSessionsInRange(start, end).collect { sessions ->
+                sessionDao.getSessionsInRange(start, now).collect { sessions ->
                     _cycleDuration.value = sessions.filter { it.result.name == "SUCCESS" }.sumOf { it.duration }
                 }
             }
